@@ -31,11 +31,13 @@ def create_app():
     from app.routes.main import main_bp
     from app.routes.payment import payment_bp
     from app.routes.admin import admin_bp
+    from app.routes.test import test_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(payment_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(test_bp)
     
     # Create database tables (wrapped to avoid crash if DB unreachable)
     skip_db_init = os.environ.get('SKIP_DB_INIT', 'False').lower() in ['1', 'true', 'yes']

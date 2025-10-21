@@ -46,7 +46,9 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
     MAIL_MAX_EMAILS = None
     MAIL_ASCII_ATTACHMENTS = False
-    MAIL_TIMEOUT = 10  # Timeout after 10 seconds to prevent hanging    # PayOS configuration
+    MAIL_TIMEOUT = 10  # Timeout after 10 seconds to prevent hanging
+    # Enable debug mode for SMTP troubleshooting (set MAIL_DEBUG=True in Railway to see SMTP logs)
+    MAIL_DEBUG = os.environ.get('MAIL_DEBUG', 'False').lower() in ['true', '1', 'yes']    # PayOS configuration
     PAYOS_CLIENT_ID = os.environ.get('PAYOS_CLIENT_ID')
     PAYOS_API_KEY = os.environ.get('PAYOS_API_KEY')
     PAYOS_CHECKSUM_KEY = os.environ.get('PAYOS_CHECKSUM_KEY')
