@@ -42,7 +42,10 @@ class Config:
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', '1', 'yes']
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME')    # PayOS configuration
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME')
+    MAIL_MAX_EMAILS = None
+    MAIL_ASCII_ATTACHMENTS = False
+    MAIL_TIMEOUT = 10  # Timeout after 10 seconds to prevent hanging    # PayOS configuration
     PAYOS_CLIENT_ID = os.environ.get('PAYOS_CLIENT_ID')
     PAYOS_API_KEY = os.environ.get('PAYOS_API_KEY')
     PAYOS_CHECKSUM_KEY = os.environ.get('PAYOS_CHECKSUM_KEY')

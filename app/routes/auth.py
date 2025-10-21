@@ -34,37 +34,47 @@ def validate_password(password):
 
 def send_verification_email(user):
     """Send email verification"""
-    token = user.generate_verification_token()
-    verification_url = url_for('auth.verify_email', token=token, _external=True)
-    current_time_vn = get_vietnam_time()
-    
-    msg = Message(
-        subject='Xác thực tài khoản Mahika của bạn',
-        recipients=[user.email],
-        html=render_template('emails/verification.html', 
-                           user=user, 
-                           verification_url=verification_url,
-                           current_time_vn=current_time_vn),
-        body=f'Vui lòng truy cập liên kết sau để xác thực tài khoản: {verification_url}'
-    )
-    mail.send(msg)
+    try:
+        token = user.generate_verification_token()
+        verification_url = url_for('auth.verify_email', token=token, _external=True)
+        current_time_vn = get_vietnam_time()
+        
+        msg = Message(
+            subject='Xác thực tài khoản Mahika của bạn',
+            recipients=[user.email],
+            html=render_template('emails/verification.html', 
+                               user=user, 
+                               verification_url=verification_url,
+                               current_time_vn=current_time_vn),
+            body=f'Vui lòng truy cập liên kết sau để xác thực tài khoản: {verification_url}'
+        )
+        mail.send(msg)
+        return True
+    except Exception as e:
+        current_app.logger.error(f'Error sending verification email: {str(e)}')
+        return False
 
 def send_reset_email(user):
     """Send password reset email"""
-    token = user.generate_reset_token()
-    reset_url = url_for('auth.reset_password', token=token, _external=True)
-    current_time_vn = get_vietnam_time()
-    
-    msg = Message(
-        subject='Đặt lại mật khẩu Mahika',
-        recipients=[user.email],
-        html=render_template('emails/reset_password.html', 
-                           user=user, 
-                           reset_url=reset_url,
-                           current_time_vn=current_time_vn),
-        body=f'Vui lòng truy cập liên kết sau để đặt lại mật khẩu: {reset_url}'
-    )
-    mail.send(msg)
+    try:
+        token = user.generate_reset_token()
+        reset_url = url_for('auth.reset_password', token=token, _external=True)
+        current_time_vn = get_vietnam_time()
+        
+        msg = Message(
+            subject='Đặt lại mật khẩu Mahika',
+            recipients=[user.email],
+            html=render_template('emails/reset_password.html', 
+                               user=user, 
+                               reset_url=reset_url,
+                               current_time_vn=current_time_vn),
+            body=f'Vui lòng truy cập liên kết sau để đặt lại mật khẩu: {reset_url}'
+        )
+        mail.send(msg)
+        return True
+    except Exception as e:
+        current_app.logger.error(f'Error sending reset email: {str(e)}')
+        return False
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -109,9 +119,13 @@ def register():
             db.session.commit()
             
             # Send verification email
-            send_verification_email(user)
+            email_sent = send_verification_email(user)
             
-            flash('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.', 'success')
+            if email_sent:
+                flash('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.', 'success')
+            else:
+                flash('Đăng ký thành công! Tuy nhiên không thể gửi email xác thực. Vui lòng liên hệ admin.', 'warning')
+            
             return redirect(url_for('auth.login'))
             
         except Exception as e:
@@ -191,7 +205,9 @@ def forgot_password():
         
         user = User.query.filter_by(email=email).first()
         if user:
-            send_reset_email(user)
+            email_sent = send_reset_email(user)
+            if not email_sent:
+                current_app.logger.error(f'Failed to send reset email to {email}')
         
         # Always show success message for security
         flash('Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu.', 'success')
@@ -243,6 +259,11 @@ def resend_verification():
         flash('Tài khoản đã được xác thực', 'info')
         return redirect(url_for('main.dashboard'))
     
-    send_verification_email(current_user)
-    flash('Email xác thực đã được gửi lại', 'success')
+    email_sent = send_verification_email(current_user)
+    
+    if email_sent:
+        flash('Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư.', 'success')
+    else:
+        flash('Không thể gửi email xác thực. Vui lòng thử lại sau hoặc liên hệ admin.', 'error')
+    
     return redirect(url_for('main.dashboard'))
