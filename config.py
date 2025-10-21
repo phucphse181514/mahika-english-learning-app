@@ -35,14 +35,15 @@ class Config:
         'pool_pre_ping': True
     }
     
-    # Email configuration
+    # Email configuration (supports Gmail, Brevo, etc.)
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 587)
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', '1', 'yes']
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', '1', 'yes']
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME')
+    # For Brevo: MAIL_DEFAULT_SENDER must be a verified email (can differ from MAIL_USERNAME)
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
     MAIL_MAX_EMAILS = None
     MAIL_ASCII_ATTACHMENTS = False
     MAIL_TIMEOUT = 10  # Timeout after 10 seconds to prevent hanging    # PayOS configuration
