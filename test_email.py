@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Test email configuration
+Note: This test sends synchronously for testing purposes.
+In production, emails are sent asynchronously to prevent worker timeouts.
 """
 import os
 from dotenv import load_dotenv

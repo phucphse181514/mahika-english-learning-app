@@ -5,9 +5,31 @@ from werkzeug.security import generate_password_hash
 from app import db, mail
 from app.models import User
 from datetime import datetime, timezone, timedelta
+from threading import Thread
 import re
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+# ================================================================
+# FIX: Prevent Gunicorn worker timeouts when sending emails on Railway
+# ================================================================
+# Reason:
+#   Railway kills Flask workers if a request runs longer than ~30s.
+#   The mail.send() function blocks while connecting to SMTP server,
+#   which makes the worker hang and causes "WORKER TIMEOUT" errors.
+# Solution:
+#   Send emails asynchronously in a background thread so Flask can
+#   return a response immediately while the email is sent in parallel.
+# ================================================================
+
+def send_async_email(app, msg):
+    """Send email in a background thread to avoid blocking requests."""
+    with app.app_context():
+        try:
+            mail.send(msg)
+            app.logger.info(f"✅ Email sent successfully to {msg.recipients}")
+        except Exception as e:
+            app.logger.error(f"❌ Failed to send email to {msg.recipients}: {str(e)}")
 
 def get_vietnam_time():
     """Get current time in Vietnam timezone (UTC+7)"""
@@ -33,7 +55,7 @@ def validate_password(password):
     return True, "Mật khẩu hợp lệ"
 
 def send_verification_email(user):
-    """Send email verification"""
+    """Send email verification asynchronously"""
     try:
         token = user.generate_verification_token()
         verification_url = url_for('auth.verify_email', token=token, _external=True)
@@ -48,14 +70,20 @@ def send_verification_email(user):
                                current_time_vn=current_time_vn),
             body=f'Vui lòng truy cập liên kết sau để xác thực tài khoản: {verification_url}'
         )
-        mail.send(msg)
+        
+        # Send email asynchronously to prevent blocking
+        Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        ).start()
+        
         return True
     except Exception as e:
-        current_app.logger.error(f'Error sending verification email: {str(e)}')
+        current_app.logger.error(f'Error preparing verification email: {str(e)}')
         return False
 
 def send_reset_email(user):
-    """Send password reset email"""
+    """Send password reset email asynchronously"""
     try:
         token = user.generate_reset_token()
         reset_url = url_for('auth.reset_password', token=token, _external=True)
@@ -70,10 +98,16 @@ def send_reset_email(user):
                                current_time_vn=current_time_vn),
             body=f'Vui lòng truy cập liên kết sau để đặt lại mật khẩu: {reset_url}'
         )
-        mail.send(msg)
+        
+        # Send email asynchronously to prevent blocking
+        Thread(
+            target=send_async_email,
+            args=(current_app._get_current_object(), msg)
+        ).start()
+        
         return True
     except Exception as e:
-        current_app.logger.error(f'Error sending reset email: {str(e)}')
+        current_app.logger.error(f'Error preparing reset email: {str(e)}')
         return False
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -118,11 +152,11 @@ def register():
             db.session.add(user)
             db.session.commit()
             
-            # Send verification email
+            # Send verification email asynchronously
             email_sent = send_verification_email(user)
             
             if email_sent:
-                flash('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.', 'success')
+                flash('Đăng ký thành công! Email xác thực đang được gửi, vui lòng kiểm tra hộp thư.', 'success')
             else:
                 flash('Đăng ký thành công! Tuy nhiên không thể gửi email xác thực. Vui lòng liên hệ admin.', 'warning')
             
@@ -262,7 +296,7 @@ def resend_verification():
     email_sent = send_verification_email(current_user)
     
     if email_sent:
-        flash('Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư.', 'success')
+        flash('Email xác thực đang được gửi. Vui lòng kiểm tra hộp thư trong vài phút.', 'success')
     else:
         flash('Không thể gửi email xác thực. Vui lòng thử lại sau hoặc liên hệ admin.', 'error')
     
