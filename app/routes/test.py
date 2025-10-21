@@ -30,7 +30,10 @@ def test_brevo():
     Usage: GET /test/brevo
     """
     try:
-        # Get default sender or use MAIL_USERNAME
+        # Test recipient email
+        test_recipient = 'buinguyenkhoi6868@gmail.com'
+        
+        # Get default sender for FROM field
         sender = current_app.config.get('MAIL_DEFAULT_SENDER') or current_app.config.get('MAIL_USERNAME')
         
         if not sender:
@@ -39,21 +42,30 @@ def test_brevo():
                 'message': 'MAIL_DEFAULT_SENDER or MAIL_USERNAME not configured'
             }), 500
         
-        # Create test message - send to same email as sender for testing
+        # Create test message - send to test recipient
         msg = Message(
-            subject='✅ Brevo SMTP Test from Railway',
-            recipients=[sender],  # Send to self for testing
-            body='If you received this email, your Brevo SMTP configuration is working correctly!',
+            subject='✅ Brevo SMTP Test from Railway - Mahika App',
+            recipients=[test_recipient],  # Send to test email
+            body='Xin chào! Đây là email test từ hệ thống Mahika English Learning App.\n\nNếu bạn nhận được email này, nghĩa là cấu hình Brevo SMTP đã hoạt động chính xác!\n\nCảm ơn đã test.',
             html='''
-            <h2>✅ Brevo SMTP Test Successful!</h2>
-            <p>Your Brevo SMTP configuration on Railway is working correctly.</p>
-            <p><strong>Configuration:</strong></p>
-            <ul>
-                <li>Server: smtp-relay.brevo.com</li>
-                <li>Port: 587</li>
-                <li>Sender: ''' + sender + '''</li>
-            </ul>
-            <p>This email was sent asynchronously using background threading.</p>
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #4CAF50;">✅ Brevo SMTP Test Thành Công!</h2>
+                <p>Xin chào <strong>buinguyenkhoi6868@gmail.com</strong>,</p>
+                <p>Đây là email test từ hệ thống <strong>Mahika English Learning App</strong>.</p>
+                <p>Nếu bạn nhận được email này, nghĩa là cấu hình Brevo SMTP đã hoạt động chính xác!</p>
+                
+                <h3>📋 Thông tin cấu hình:</h3>
+                <ul>
+                    <li><strong>SMTP Server:</strong> smtp-relay.brevo.com</li>
+                    <li><strong>Port:</strong> 587</li>
+                    <li><strong>Sender:</strong> ''' + sender + '''</li>
+                    <li><strong>Method:</strong> Async (Background Threading)</li>
+                </ul>
+                
+                <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                    Email này được gửi tự động từ Railway production environment.
+                </p>
+            </div>
             '''
         )
         
@@ -63,11 +75,12 @@ def test_brevo():
             args=(current_app._get_current_object(), msg)
         ).start()
         
-        current_app.logger.info(f"📧 Test email triggered for {sender}")
+        current_app.logger.info(f"📧 Test email triggered for {test_recipient} (from: {sender})")
         
         return jsonify({
             'status': 'success',
-            'message': f'Test email triggered! Check inbox at: {sender}',
+            'message': f'Test email triggered! Check inbox at: {test_recipient}',
+            'from': sender,
             'note': 'Email is being sent in background. Check Railway logs for status.'
         }), 200
         
