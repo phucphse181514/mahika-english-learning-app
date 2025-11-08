@@ -101,7 +101,7 @@ def create_payment():
         payment_data = {
             "orderCode": order_code,
             "amount": amount,
-            "description": "MyApp Desktop",  # Giới hạn 25 ký tự cho PayOS
+            "description": "Mahika App",  # Giới hạn 25 ký tự cho PayOS
             "returnUrl": current_app.config.get('PAYOS_RETURN_URL'),
             "cancelUrl": current_app.config.get('PAYOS_CANCEL_URL'),
             "signature": signature

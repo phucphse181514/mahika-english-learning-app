@@ -61,5 +61,5 @@ class Config:
     DOWNLOAD_FILE_NAME = os.environ.get('DOWNLOAD_FILE_NAME') or 'App.exe'
     
     # Payment amount (in VND for PayOS)
-    PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '50000'))  # 50,000 VND
+    PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '5000'))  # 50,000 VND
     PAYMENT_CURRENCY = 'VND'
