@@ -65,7 +65,7 @@ class Config:
     # Payment configuration
     PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '5000'))  # 5,000 VND
     PAYMENT_CURRENCY = 'VND'
-    PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION') or 'Mahika App - Premium License'
+    PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION') or 'Mahika App Premium'  # Max 25 chars for PayOS
     
     # File download configuration
     DOWNLOAD_FILE_PATH = os.environ.get('DOWNLOAD_FILE_PATH') or 'downloads/app.exe'

@@ -13,17 +13,32 @@ import os
 payment_bp = Blueprint('payment', __name__, url_prefix='/payment')
 
 def create_payos_signature(data, checksum_key):
-    """Create PayOS signature theo format chính thức"""
-    # Tạo chuỗi data để ký theo thứ tự alphabet
+    """
+    Create PayOS signature theo format chính thức của PayOS
+    Format chuẩn: amount={amount}&cancelUrl={cancelUrl}&description={description}&orderCode={orderCode}&returnUrl={returnUrl}
+    """
+    # PayOS yêu cầu sắp xếp theo alphabet và format chính xác
     sorted_keys = sorted(data.keys())
-    query_string = '&'.join([f"{key}={data[key]}" for key in sorted_keys])
     
-    # Tạo signature bằng HMAC SHA256
+    # Tạo string theo format key=value&key=value
+    parts = []
+    for key in sorted_keys:
+        # Convert value to string, đảm bảo format đúng
+        value = str(data[key])
+        parts.append(f"{key}={value}")
+    
+    data_string = "&".join(parts)
+    
+    current_app.logger.info(f"📝 [SIGNATURE] Data string: {data_string}")
+    
+    # Tạo HMAC SHA256 signature
     signature = hmac.new(
         checksum_key.encode('utf-8'),
-        query_string.encode('utf-8'),
+        data_string.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
+    
+    current_app.logger.info(f"🔐 [SIGNATURE] Generated: {signature}")
     
     return signature
 
@@ -82,14 +97,18 @@ def create_payment():
         order_code = int(f"{current_user.id}{int(datetime.now().timestamp())}")
         description = current_app.config.get('PAYMENT_DESCRIPTION', 'Mahika App - Premium License')
         
+        # PayOS giới hạn 25 ký tự cho description
+        description_trimmed = description[:25]
+        
         current_app.logger.info(f'Amount: {amount}')
         current_app.logger.info(f'Order code: {order_code}')
         current_app.logger.info(f'Description: {description}')
+        current_app.logger.info(f'Description (trimmed): {description_trimmed}')
           # PayOS payment data theo API documentation có signature
         signature_data = {
             "amount": amount,
             "cancelUrl": current_app.config.get('PAYOS_CANCEL_URL'),
-            "description": description[:25],  # Giới hạn 25 ký tự cho PayOS
+            "description": description_trimmed,
             "orderCode": order_code,
             "returnUrl": current_app.config.get('PAYOS_RETURN_URL')
         }
@@ -100,10 +119,11 @@ def create_payment():
         signature = create_payos_signature(signature_data, checksum_key)
         current_app.logger.info(f'Generated signature: {signature}')
         
+        # Payment data GỬI ĐI phải dùng CÙNG description với signature_data
         payment_data = {
             "orderCode": order_code,
             "amount": amount,
-            "description": "MyApp Desktop",  # Giới hạn 25 ký tự cho PayOS
+            "description": description_trimmed,  # PHẢI GIỐNG signature_data
             "returnUrl": current_app.config.get('PAYOS_RETURN_URL'),
             "cancelUrl": current_app.config.get('PAYOS_CANCEL_URL'),
             "signature": signature
