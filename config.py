@@ -35,19 +35,20 @@ class Config:
         'pool_pre_ping': True
     }
     
-    # Email configuration (supports Gmail, Brevo, etc.)
+    # Email configuration - Brevo API (Primary method)
+    BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
+    
+    # Email configuration - SMTP (Fallback method)
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 587)
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', '1', 'yes']
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', '1', 'yes']
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    # For Brevo: MAIL_DEFAULT_SENDER must be a verified email (can differ from MAIL_USERNAME)
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
     MAIL_MAX_EMAILS = None
     MAIL_ASCII_ATTACHMENTS = False
-    MAIL_TIMEOUT = 10  # Timeout after 10 seconds to prevent hanging
-    # Enable debug mode for SMTP troubleshooting (set MAIL_DEBUG=True in Railway to see SMTP logs)
+    MAIL_TIMEOUT = 10
     MAIL_DEBUG = os.environ.get('MAIL_DEBUG', 'False').lower() in ['true', '1', 'yes']    # PayOS configuration
     PAYOS_CLIENT_ID = os.environ.get('PAYOS_CLIENT_ID')
     PAYOS_API_KEY = os.environ.get('PAYOS_API_KEY')

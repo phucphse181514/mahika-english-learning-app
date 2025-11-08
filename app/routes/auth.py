@@ -1,50 +1,13 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 from flask_login import login_user, logout_user, login_required, current_user
-from flask_mail import Message
 from werkzeug.security import generate_password_hash
-from app import db, mail
+from app import db
 from app.models import User
+from app.utils.email import send_email
 from datetime import datetime, timezone, timedelta
-from threading import Thread
 import re
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
-
-# ================================================================
-# FIX: Prevent Gunicorn worker timeouts when sending emails on Railway
-# ================================================================
-# Reason:
-#   Railway kills Flask workers if a request runs longer than ~30s.
-#   The mail.send() function blocks while connecting to SMTP server,
-#   which makes the worker hang and causes "WORKER TIMEOUT" errors.
-# Solution:
-#   Send emails asynchronously in a background thread so Flask can
-#   return a response immediately while the email is sent in parallel.
-# ================================================================
-
-def send_async_email(app, msg):
-    """Send email in a background thread to avoid blocking requests."""
-    with app.app_context():
-        try:
-            app.logger.info(f"📧 [EMAIL START] Attempting to send email to {msg.recipients}")
-            app.logger.info(f"📧 [EMAIL CONFIG] MAIL_SERVER={app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')}")
-            app.logger.info(f"📧 [EMAIL CONFIG] MAIL_USE_TLS={app.config.get('MAIL_USE_TLS')}, MAIL_USE_SSL={app.config.get('MAIL_USE_SSL')}")
-            app.logger.info(f"📧 [EMAIL CONFIG] MAIL_USERNAME={app.config.get('MAIL_USERNAME')}")
-            app.logger.info(f"📧 [EMAIL CONFIG] MAIL_DEFAULT_SENDER={app.config.get('MAIL_DEFAULT_SENDER')}")
-            app.logger.info(f"📧 [EMAIL DETAILS] Subject: {msg.subject}")
-            app.logger.info(f"📧 [EMAIL DETAILS] From: {msg.sender}")
-            app.logger.info(f"📧 [EMAIL DETAILS] To: {msg.recipients}")
-            
-            mail.send(msg)
-            
-            app.logger.info(f"✅ [EMAIL SUCCESS] Email sent successfully to {msg.recipients}")
-            app.logger.info(f"✅ [EMAIL SUCCESS] Subject: {msg.subject}")
-        except Exception as e:
-            app.logger.error(f"❌ [EMAIL ERROR] Failed to send email to {msg.recipients}")
-            app.logger.error(f"❌ [EMAIL ERROR] Subject: {msg.subject}")
-            app.logger.error(f"❌ [EMAIL ERROR] Error type: {type(e).__name__}")
-            app.logger.error(f"❌ [EMAIL ERROR] Error message: {str(e)}")
-            app.logger.error(f"❌ [EMAIL ERROR] Full traceback:", exc_info=True)
 
 def get_vietnam_time():
     """Get current time in Vietnam timezone (UTC+7)"""
@@ -70,7 +33,7 @@ def validate_password(password):
     return True, "Mật khẩu hợp lệ"
 
 def send_verification_email(user):
-    """Send email verification asynchronously"""
+    """Send email verification using Brevo API"""
     try:
         current_app.logger.info(f"🔵 [VERIFICATION EMAIL] Starting verification email process for user: {user.email}")
         
@@ -82,34 +45,35 @@ def send_verification_email(user):
         
         current_time_vn = get_vietnam_time()
         
-        msg = Message(
+        html_content = render_template('emails/verification.html', 
+                                       user=user, 
+                                       verification_url=verification_url,
+                                       current_time_vn=current_time_vn)
+        
+        current_app.logger.info(f"🔵 [VERIFICATION EMAIL] Email template rendered for {user.email}")
+        
+        # Send email using new email utility (Brevo API with SMTP fallback)
+        result = send_email(
+            to_email=user.email,
             subject='Xác thực tài khoản Mahika của bạn',
-            recipients=[user.email],
-            html=render_template('emails/verification.html', 
-                               user=user, 
-                               verification_url=verification_url,
-                               current_time_vn=current_time_vn),
-            body=f'Vui lòng truy cập liên kết sau để xác thực tài khoản: {verification_url}'
+            html_content=html_content,
+            text_content=f'Vui lòng truy cập liên kết sau để xác thực tài khoản: {verification_url}'
         )
         
-        current_app.logger.info(f"🔵 [VERIFICATION EMAIL] Email message prepared for {user.email}")
-        current_app.logger.info(f"🔵 [VERIFICATION EMAIL] Starting background thread to send email...")
-        
-        # Send email asynchronously to prevent blocking
-        Thread(
-            target=send_async_email,
-            args=(current_app._get_current_object(), msg)
-        ).start()
-        
-        current_app.logger.info(f"✅ [VERIFICATION EMAIL] Background thread started successfully for {user.email}")
-        return True
+        if result['success']:
+            current_app.logger.info(f"✅ [VERIFICATION EMAIL] Email sent successfully for {user.email}")
+            return True
+        else:
+            current_app.logger.error(f"❌ [VERIFICATION EMAIL] Failed to send email for {user.email}: {result['message']}")
+            return False
+            
     except Exception as e:
         current_app.logger.error(f'❌ [VERIFICATION EMAIL] Error preparing verification email for {user.email}')
         current_app.logger.error(f'❌ [VERIFICATION EMAIL] Error: {str(e)}', exc_info=True)
         return False
 
 def send_reset_email(user):
-    """Send password reset email asynchronously"""
+    """Send password reset email using Brevo API"""
     try:
         current_app.logger.info(f"🔵 [RESET EMAIL] Starting password reset email process for user: {user.email}")
         
@@ -121,27 +85,28 @@ def send_reset_email(user):
         
         current_time_vn = get_vietnam_time()
         
-        msg = Message(
+        html_content = render_template('emails/reset_password.html', 
+                                       user=user, 
+                                       reset_url=reset_url,
+                                       current_time_vn=current_time_vn)
+        
+        current_app.logger.info(f"🔵 [RESET EMAIL] Email template rendered for {user.email}")
+        
+        # Send email using new email utility (Brevo API with SMTP fallback)
+        result = send_email(
+            to_email=user.email,
             subject='Đặt lại mật khẩu Mahika',
-            recipients=[user.email],
-            html=render_template('emails/reset_password.html', 
-                               user=user, 
-                               reset_url=reset_url,
-                               current_time_vn=current_time_vn),
-            body=f'Vui lòng truy cập liên kết sau để đặt lại mật khẩu: {reset_url}'
+            html_content=html_content,
+            text_content=f'Vui lòng truy cập liên kết sau để đặt lại mật khẩu: {reset_url}'
         )
         
-        current_app.logger.info(f"🔵 [RESET EMAIL] Email message prepared for {user.email}")
-        current_app.logger.info(f"🔵 [RESET EMAIL] Starting background thread to send email...")
-        
-        # Send email asynchronously to prevent blocking
-        Thread(
-            target=send_async_email,
-            args=(current_app._get_current_object(), msg)
-        ).start()
-        
-        current_app.logger.info(f"✅ [RESET EMAIL] Background thread started successfully for {user.email}")
-        return True
+        if result['success']:
+            current_app.logger.info(f"✅ [RESET EMAIL] Email sent successfully for {user.email}")
+            return True
+        else:
+            current_app.logger.error(f"❌ [RESET EMAIL] Failed to send email for {user.email}: {result['message']}")
+            return False
+            
     except Exception as e:
         current_app.logger.error(f'❌ [RESET EMAIL] Error preparing reset email for {user.email}')
         current_app.logger.error(f'❌ [RESET EMAIL] Error: {str(e)}', exc_info=True)
