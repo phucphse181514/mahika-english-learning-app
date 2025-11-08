@@ -4,6 +4,8 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from config import Config
 import os
+import logging
+import sys
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -13,6 +15,36 @@ mail = Mail()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    
+    # Configure logging for Railway and local development
+    # Railway captures stdout/stderr, so we log to console
+    if not app.debug:
+        # Set logging level
+        app.logger.setLevel(logging.INFO)
+        
+        # Console handler for Railway logs
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        
+        # Format with emoji for easy identification
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        console_handler.setFormatter(formatter)
+        
+        # Add handler
+        app.logger.addHandler(console_handler)
+        
+        app.logger.info('=' * 80)
+        app.logger.info('🚀 Mahika English Learning App Starting...')
+        app.logger.info(f'🔧 Environment: {"Production" if not app.debug else "Development"}')
+        app.logger.info(f'📧 Mail Server: {app.config.get("MAIL_SERVER")}:{app.config.get("MAIL_PORT")}')
+        app.logger.info(f'📧 Mail Username: {app.config.get("MAIL_USERNAME")}')
+        app.logger.info(f'📧 Mail Default Sender: {app.config.get("MAIL_DEFAULT_SENDER")}')
+        app.logger.info(f'📧 Mail Use TLS: {app.config.get("MAIL_USE_TLS")}')
+        app.logger.info(f'🗄️  Database: {app.config.get("DB_HOST")}:{app.config.get("DB_PORT")}/{app.config.get("DB_NAME")}')
+        app.logger.info('=' * 80)
     
     # Initialize extensions with app
     db.init_app(app)
