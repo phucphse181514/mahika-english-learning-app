@@ -35,9 +35,13 @@ class Config:
         'pool_pre_ping': True
     }
     
+    # Application information
+    APP_NAME = os.environ.get('APP_NAME') or 'Mahika'
+    APP_FULL_NAME = os.environ.get('APP_FULL_NAME') or 'Mahika English Learning'
+    
     # Email configuration - Brevo API (Primary method)
     BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'phamhoangphuc1824@gmail.com'
     
     # Email configuration - SMTP (Fallback method)
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
@@ -49,17 +53,22 @@ class Config:
     MAIL_MAX_EMAILS = None
     MAIL_ASCII_ATTACHMENTS = False
     MAIL_TIMEOUT = 10
-    MAIL_DEBUG = os.environ.get('MAIL_DEBUG', 'False').lower() in ['true', '1', 'yes']    # PayOS configuration
+    MAIL_DEBUG = os.environ.get('MAIL_DEBUG', 'False').lower() in ['true', '1', 'yes']
+    
+    # PayOS configuration
     PAYOS_CLIENT_ID = os.environ.get('PAYOS_CLIENT_ID')
     PAYOS_API_KEY = os.environ.get('PAYOS_API_KEY')
     PAYOS_CHECKSUM_KEY = os.environ.get('PAYOS_CHECKSUM_KEY')
-    PAYOS_RETURN_URL = os.environ.get('PAYOS_RETURN_URL') or 'http://localhost:5000/payment/return'
-    PAYOS_CANCEL_URL = os.environ.get('PAYOS_CANCEL_URL') or 'http://localhost:5000/payment/cancel'
-      # File download configuration
+    PAYOS_RETURN_URL = os.environ.get('PAYOS_RETURN_URL') or 'https://mahika-website.up.railway.app/payment/return'
+    PAYOS_CANCEL_URL = os.environ.get('PAYOS_CANCEL_URL') or 'https://mahika-website.up.railway.app/payment/cancel'
+    
+    # Payment configuration
+    PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '5000'))  # 5,000 VND
+    PAYMENT_CURRENCY = 'VND'
+    PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION') or 'Mahika App - Premium License'
+    
+    # File download configuration
     DOWNLOAD_FILE_PATH = os.environ.get('DOWNLOAD_FILE_PATH') or 'downloads/app.exe'
     DOWNLOAD_FILE_URL = os.environ.get('DOWNLOAD_FILE_URL')  # Google Drive direct download URL
-    DOWNLOAD_FILE_NAME = os.environ.get('DOWNLOAD_FILE_NAME') or 'App.exe'
-    
-    # Payment amount (in VND for PayOS)
-    PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '5000'))  # 50,000 VND
-    PAYMENT_CURRENCY = 'VND'
+    DOWNLOAD_FILE_NAME = os.environ.get('DOWNLOAD_FILE_NAME') or 'MahikaApp.exe'
+

@@ -78,16 +78,18 @@ def create_payment():
         
         current_app.logger.info('Creating payment data...')
         # Payment details
-        amount = current_app.config.get('PAYMENT_AMOUNT', 50000)  # 50,000 VND
+        amount = current_app.config.get('PAYMENT_AMOUNT', 5000)  # 5,000 VND default
         order_code = int(f"{current_user.id}{int(datetime.now().timestamp())}")
+        description = current_app.config.get('PAYMENT_DESCRIPTION', 'Mahika App - Premium License')
         
         current_app.logger.info(f'Amount: {amount}')
         current_app.logger.info(f'Order code: {order_code}')
+        current_app.logger.info(f'Description: {description}')
           # PayOS payment data theo API documentation có signature
         signature_data = {
             "amount": amount,
             "cancelUrl": current_app.config.get('PAYOS_CANCEL_URL'),
-            "description": "MyApp Desktop",  # Giới hạn 25 ký tự cho PayOS
+            "description": description[:25],  # Giới hạn 25 ký tự cho PayOS
             "orderCode": order_code,
             "returnUrl": current_app.config.get('PAYOS_RETURN_URL')
         }
@@ -101,7 +103,7 @@ def create_payment():
         payment_data = {
             "orderCode": order_code,
             "amount": amount,
-            "description": "Mahika",  # Giới hạn 25 ký tự cho PayOS
+            "description": "MyApp Desktop",  # Giới hạn 25 ký tự cho PayOS
             "returnUrl": current_app.config.get('PAYOS_RETURN_URL'),
             "cancelUrl": current_app.config.get('PAYOS_CANCEL_URL'),
             "signature": signature

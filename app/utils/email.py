@@ -10,7 +10,7 @@ from flask_mail import Message
 from threading import Thread
 
 
-def send_email_via_brevo_api(to_email, subject, html_content, sender_name="Mahika English Learning"):
+def send_email_via_brevo_api(to_email, subject, html_content, sender_name="Mahika"):
     """
     Send email using Brevo (Sendinblue) API with detailed logging
     
@@ -162,7 +162,7 @@ def send_email_via_smtp(to_email, subject, html_content, text_content=None):
         }
 
 
-def send_email(to_email, subject, html_content, text_content=None, sender_name="Mahika English Learning"):
+def send_email(to_email, subject, html_content, text_content=None, sender_name="Mahika"):
     """
     Smart email sender - tries Brevo API first, falls back to SMTP if needed
     
