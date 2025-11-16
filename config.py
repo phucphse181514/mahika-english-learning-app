@@ -63,7 +63,7 @@ class Config:
     PAYOS_CANCEL_URL = os.environ.get('PAYOS_CANCEL_URL') or 'https://mahika-website.up.railway.app/payment/cancel'
     
     # Payment configuration
-    PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '5000'))  # 5,000 VND
+    PAYMENT_AMOUNT = int(os.environ.get('PAYMENT_AMOUNT', '50000'))  # 5,000 VND
     PAYMENT_CURRENCY = 'VND'
     PAYMENT_DESCRIPTION = os.environ.get('PAYMENT_DESCRIPTION') or 'Mahika App Premium'  # Max 25 chars for PayOS
     
